@@ -1,0 +1,29 @@
+{
+    "id": "5ae7d42e-3d89-4215-9366-aae2eb3b42a8",
+    "name": "Start",
+    "nodeType": "start",
+    "probability": 1,
+    "cost": 10,
+    "expected_cost": null,
+    "children": [
+        {
+            "id": "41866edd-3b35-48fd-aba4-05199b26ea48",
+            "name": "First tier test decision",
+            "nodeType": "decision",
+            "probability": 1,
+            "cost": 0,
+            "expected_cost": null,
+            "children": [
+                {
+                    "id": "ae6457d4-2644-4453-91f8-b1087e6d8f4a",
+                    "name": "CMA",
+                    "nodeType": "action",
+                    "probability": 0.8,
+                    "cost": 500,
+                    "expected_cost": null,
+                    "children": []
+                }
+            ]
+        }
+    ]
+}

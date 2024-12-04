@@ -5,6 +5,7 @@ import { Alert, Stack, Button, Dialog, DialogActions, DialogContent, DialogConte
 import { styled } from '@mui/material/styles';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import InputIcon from '@mui/icons-material/Input';
 import FigureLegend from './FigureLegend';
 import SelectedNodeDetails from './SelectedNodeDetails';
 import { nodeTypes, initialTreeData, renderCustomNodeElement } from './appConfig';
@@ -45,6 +46,18 @@ const TreeVisualization = () => {
     whiteSpace: 'nowrap',
     width: 1,
   });
+
+  const setAllStateDefault = () => {
+    setSelectedNode(null);
+    setAllowAddNodeType([false, false, false, false]);
+    setNewNode({});
+    setShowProbabilityError(false);
+    setShowCostError(false);
+    setShowEditNodeDialog(false);
+    setShowAddNodeDialog(false);
+    setShowDeleteNodeDialog(false);
+    setShowUpdateExpectedCostAlert(false);
+  }
 
   const editNode = () => {
     setShowProbabilityError(false);
@@ -395,6 +408,36 @@ const TreeVisualization = () => {
       
         <Stack spacing={2} direction="column">
           {/* A button with download icon to download treeData as a json file */}
+          
+
+          {/* Load demo_tree.json */}
+          <Button onClick={() => {
+            try {
+              setAllStateDefault();
+              setTreeData(require('./demo_tree.json'));
+            }
+            catch (error) {
+              alert('Error loading demo tree');
+            } 
+          }} 
+          variant="contained" 
+          color="primary"
+          startIcon={<InputIcon />}>Load an Expert-Alone Tree</Button>
+
+          {/* Load demo_tree_2.json */}
+          <Button onClick={() => {
+            try {
+              setAllStateDefault();
+              setTreeData(require('./demo_tree_2.json'));
+            }
+            catch (error) {
+              alert('Error loading demo tree');
+            } 
+          }} 
+          variant="contained" 
+          color="primary"
+          startIcon={<InputIcon />}>Load an AI-Delegate Tree</Button>
+
           <Button onClick={() => {
             const element = document.createElement("a");
             const file = new Blob([JSON.stringify(treeData)], { type: 'text/plain' });
@@ -405,8 +448,8 @@ const TreeVisualization = () => {
           }} 
           variant="contained" 
           color="primary"
-          startIcon={<CloudDownloadIcon />}>Download Tree
-          </Button>
+          startIcon={<CloudDownloadIcon />}>Download Tree</Button>
+
         {/* A material ui style button to with upload icon to upload json file to setTreeData */}
         <Button
           component="label"
@@ -423,14 +466,25 @@ const TreeVisualization = () => {
               const reader = new FileReader();
               reader.onload = (e) => {
                 const contents = e.target.result;
-                setTreeData(JSON.parse(contents));
+                try { 
+                  setAllStateDefault();
+                  setTreeData(JSON.parse(contents));  
+                } catch (error) {
+                  alert('Invalid file format');
+                }
               };
               reader.readAsText(file);
             }
             }
-          />
-        </Button>
+          /></Button>
+
+        {/* Reset tree to start node only */}
+        <Button onClick={() => {
+          setAllStateDefault();
+          setTreeData(initialTreeData);
+        }} variant="contained" color="error">Reset Tree</Button>
     
+        {/* warning banner to indicate the probability of the children of a node should sum to 1 */}
         {showUpdateExpectedCostAlert && <Alert severity="warning" onClose={() => { setShowUpdateExpectedCostAlert(false) }}> The probability of the children of a node should sum to 1. The probabilities have been normalized.</Alert>}
         {/* infomation banner to show current expected cost at root node , if it is not null */}
         {treeData.expected_cost !== null && <Alert severity="info">The expected cost of the tree is {parseInt(treeData.expected_cost)}</Alert>}

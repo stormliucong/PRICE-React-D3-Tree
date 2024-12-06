@@ -4,14 +4,17 @@ This React program aims to develop an interactive visualization for personalized
 
 
 ## Getting Started
-
-In the project directory, run:
+- Install node and npm
+- Clone the repository
+```
+git clone https://github.com/stormliucong/PRICE-React-D3-Tree.git
+```
+- In the project directory, run:
 ```
 npm install
 npm start
 ```
-The app will be launched in the development mode. \
-Open [http://localhost:3000](http://localhost:3000) to use the App in your browser.
+- The app will be launched in the development mode. Open [http://localhost:3000](http://localhost:3000) to use the App in your browser.
 
 ## Use the App
 This App allows for a dynamic and interactive way to visualize and manipulate tree structures.

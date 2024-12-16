@@ -66,7 +66,7 @@ const TreeVisualization = () => {
     selectedNode.probability = parseFloat(selectedNode.probability);
     selectedNode.cost = parseFloat(selectedNode.cost);
     // Validate the probability value
-    if (selectedNode.probability <= 0 || selectedNode.probability > 1) {
+    if (selectedNode.probability < 0 || selectedNode.probability > 1) {
       setShowProbabilityError(true);
       returnDueToError = true;
     }
@@ -106,7 +106,7 @@ const TreeVisualization = () => {
     // Validate the probability value
     console.log('newNode:', newNode);
     newNode.probability = parseFloat(newNode.probability);
-    if (newNode.probability <= 0 || newNode.probability > 1) {
+    if (newNode.probability < 0 || newNode.probability > 1) {
       setShowProbabilityError(true);
       returnDueToError = true;
     }
@@ -224,7 +224,12 @@ const TreeVisualization = () => {
         // Normalize the probability
         if (totalProbability !== 1) {
           node.children.forEach((child) => {
-            child.probability = child.probability / totalProbability;
+            if (totalProbability === 0) {
+              child.probability = 0;
+            }
+            else{
+              child.probability = child.probability / totalProbability;
+            }
           });
           setShowUpdateExpectedCostAlert(true);
         }
@@ -348,7 +353,7 @@ const TreeVisualization = () => {
                 </>
               )}
 
-              <label>Probability:<input type="number" name="probability" onChange={handleAddNodeChange} defaultValue={newNode.probability} min={0.01} max={1} step={0.1} /></label>
+              <label>Probability:<input type="number" name="probability" onChange={handleAddNodeChange} defaultValue={newNode.probability} min={0} max={1} step={0.1} /></label>
               {showProbabilityError && <Alert severity="error" > The value of probability must be between 0 and 1.</Alert>}
             </>
           )}
@@ -390,7 +395,7 @@ const TreeVisualization = () => {
             <label>Cost:<input type="number" name="cost" value={selectedNode.cost} onChange={handleSelectedNodeChange} defaultValue={0} min={0} /></label>
             {showCostError && <Alert severity="error" > The value of cost must be greater than or equal to 0.</Alert>}
             {/* Default probability is 1 */}
-            <label>Probability:<input type="number" name="probability" value={selectedNode.probability} onChange={handleSelectedNodeChange} defaultValue={1} min={0.01} max={1} step={0.1} /></label>
+            <label>Probability:<input type="number" name="probability" value={selectedNode.probability} onChange={handleSelectedNodeChange} defaultValue={1} min={0} max={1} step={0.1} /></label>
             {showProbabilityError && <Alert severity="error" > The value of probability must be between 0 and 1.</Alert>}
           </>
           }

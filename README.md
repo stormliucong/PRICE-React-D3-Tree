@@ -1,56 +1,166 @@
-# PRICE - Personalized Recursive Intelligent Cost Estimation for Rare Disease Diagnosis
+# Decision Tree Visualization Tool
 
-This React program aims to develop an interactive visualization for personalized cost estimation in rare disease diagnosis. 
+A React-based application for creating and visualizing decision trees with D3.js. This tool allows users to build complex decision trees with different types of nodes, each having specific properties and connection rules.
 
+## Demo
+
+A live demo of the application is available at:
+```
+http://165.22.13.117:4833
+```
+
+You can test the application's features including:
+- Creating and editing decision trees
+- Adding different types of nodes (Start, Decision, Action, Exit)
+- Configuring node properties
+- Visualizing the decision tree structure
+
+## Development
+
+### Local Development
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the development server:
+   ```bash
+   npm start
+   ```
+
+## Deployment Requirements
+
+To deploy this application, you'll need:
+- A server with Docker installed
+- Port 4833 available and open in the firewall
+
+## Node Types and Properties
+
+### Node Types
+1. **Start Node**
+   - Special decision node that cannot be deleted
+   - Cost: Always 0
+   - Probability: Always 1
+   - Time: 0 weeks
+   - Can only have Decision nodes as children
+
+2. **Decision Node**
+   - Probability: Always 1
+   - Time: Default 1 week
+   - Can have Action and Exit nodes as children
+
+3. **Action Node**
+   - Time: Default 2 weeks
+   - Can have Result (Outcome) and Decision nodes as children
+
+4. **Result (Outcome) Node**
+   - Cost: Always 0
+   - Time: Default 0 weeks
+   - Can have Action, Decision, and Exit nodes as children
+
+5. **Exit Node**
+   - Cost: Always 0
+   - Time: Always 0 weeks
+   - Probability: Always 1
+   - Cannot have any children
+
+### Node Connection Rules
+- **Start Node** → Decision
+- **Decision Node** → Action, Exit
+- **Action Node** → Result, Decision
+- **Result Node** → Action, Decision, Exit
+- **Exit Node** → No children allowed
+
+## Features
+
+### Node Management
+- Add new nodes with specific types based on parent node rules
+- Edit node properties (name, cost, time, probability)
+- Delete nodes (except Start node)
+- Automatic validation of node properties
+- Default values based on node type
+
+### Tree Operations
+- Load predefined demo trees
+- Upload custom tree JSON files
+- Download current tree as JSON
+- Reset tree to initial state
+- Calculate expected cost for the entire tree
+
+### Visualization
+- Interactive tree visualization using D3.js
+- Color-coded nodes based on type
+- Node type indicators (S, D, A, O, E)
+- Node details display on selection
+- Automatic tree layout and scaling
 
 ## Getting Started
-- Install node and npm
-- Clone the repository
-```
-git clone https://github.com/stormliucong/PRICE-React-D3-Tree.git
-```
-- In the project directory, run:
-```
-npm install
-npm start
-```
-- The app will be launched in the development mode. Open [http://localhost:3000](http://localhost:3000) to use the App in your browser.
 
-## Use the App
-This App allows for a dynamic and interactive way to visualize and manipulate tree structures.
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the development server:
+   ```bash
+   npm start
+   ```
 
-### Node Types and Attributes
+## Usage
 
-There are five types of nodes in the tree:
+1. **Adding Nodes**
+   - Click on a node to select it
+   - Click "Add Node" to add a child node
+   - Select the appropriate node type based on parent node rules
+   - Fill in the required properties
 
-1. **Start Node**: Root of the graph.
-2. **Decision Nodes**: Attributes include *name, expected_cost*.
-3. **Action Nodes**: Attributes include *name, probability, cost, expected_cost*.
-4. **Outcome Nodes**: Attributes include *name, probability, cost, expected_cost*.
-5. **Exit Nodes**: No specific attributes. It is a special type of action node.
+2. **Editing Nodes**
+   - Click on a node to select it
+   - Click "Edit Node" to modify its properties
+   - Some properties may be disabled based on node type
 
-### Graph Building Options
+3. **Deleting Nodes**
+   - Click on a node to select it
+   - Click "Delete Node" to remove it
+   - Note: Start node cannot be deleted
 
-1. **Add Node**:
-   - In general, the nodes follows "Decision-Action-Outcome" logic
-   - But decision and outcome can be hidden.
-   - Can not add node after exit node
-   - Sometime, it depends on the children. e.g. if there is an outcome already exist for action, only outcome is allowed to be added.
+4. **Calculating Expected Cost**
+   - Click on the Start node
+   - Click "Update Expected Cost" to calculate the expected cost for the entire tree
 
-2. **Delete Node**:
-   - All nodes can be deleted except for the start node.
-   - When a node is deleted, all its descendant nodes are also deleted.
+## File Management
 
-3. **Edit Node**:
-   - Every time a node is editted, a modal popup appears, allowing the user to fill in the details about that node.
+- **Load Demo Trees**: Predefined trees demonstrating different decision scenarios
+- **Upload Tree**: Load a custom tree from a JSON file
+- **Download Tree**: Save the current tree as a JSON file
+- **Reset Tree**: Clear the current tree and start fresh
 
-### Update Expect Cost
-Expected cost at each node will be updated by recursively calculate the expected cost at its descendants and sum them together.
+## Technical Details
 
-## Acknowledge
+### Dependencies
+- React
+- D3.js
+- Material-UI
+- UUID
+- Docker
+- Nginx
 
-The init code is generated by ChatGPT 4o. The program is powered by [react-d3-tree](https://bkrem.github.io/react-d3-tree/). [Material UI](https://mui.com/material-ui/) is used for UI development. This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app). The program supports the use of external libraries if available. 
+### Data Structure
+Each node in the tree has the following properties:
+- `id`: Unique identifier
+- `name`: Node name
+- `nodeType`: Type of node (start, decision, action, outcome, exit)
+- `probability`: Probability value (0-1)
+- `cost`: Cost value (≥ 0)
+- `time`: Time in weeks (≥ 0)
+- `expected_cost`: Calculated expected cost
+- `children`: Array of child nodes
 
-## To do list
-- probability disabled (must be 1 under certain scenarios)
+## Contributing
+
+Feel free to submit issues and enhancement requests.
+
+## License
+
+This project is licensed under the MIT License.
 

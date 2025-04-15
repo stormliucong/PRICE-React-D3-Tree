@@ -47,14 +47,17 @@ jobs:
             # Pull latest code
             git pull origin main
             
+            # Convert repository name to lowercase
+            REPO_NAME=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
+            
             # Stop and remove the old container if it exists
-            docker stop ${{ github.event.repository.name }} || true
-            docker rm ${{ github.event.repository.name }} || true
+            docker stop $REPO_NAME || true
+            docker rm $REPO_NAME || true
             
             # Build and run the new container
-            docker build -t ${{ github.event.repository.name }} .
+            docker build -t $REPO_NAME .
             docker run -d \
-              --name ${{ github.event.repository.name }} \
-              -p 80:80 \
+              --name $REPO_NAME \
+              -p 4833:4833 \
               --restart unless-stopped \
-              ${{ github.event.repository.name }} 
+              $REPO_NAME 

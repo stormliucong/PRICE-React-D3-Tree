@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![React](https://img.shields.io/badge/React-18.2.0-blue.svg)](https://reactjs.org/)
-[![CI/CD](https://github.com/cl3720/PRICE-React-D3-Tree/actions/workflows/deploy.yml/badge.svg)](https://github.com/cl3720/PRICE-React-D3-Tree/actions/workflows/deploy.yml)
+[![CI/CD](https://github.com/cl3720/PRICE-React-D3-Tree/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/cl3720/PRICE-React-D3-Tree/actions/workflows/deploy.yml)
 
 A React-based application for creating and visualizing decision trees with D3.js. This tool allows users to build complex decision trees with different types of nodes, each having specific properties and connection rules.
 

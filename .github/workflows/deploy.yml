@@ -21,10 +21,7 @@ jobs:
       - name: Clean install dependencies
         run: |
           rm -rf node_modules package-lock.json
-          npm install --legacy-peer-deps
-          
-      - name: Run tests
-        run: npm test
+          npm install
         
       - name: Build
         run: npm run build

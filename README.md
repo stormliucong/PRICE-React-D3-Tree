@@ -1,88 +1,17 @@
 # Decision Tree Visualization Tool
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![React](https://img.shields.io/badge/React-18.2.0-blue.svg)](https://reactjs.org/)
+[![CI/CD](https://github.com/cl3720/PRICE-React-D3-Tree/actions/workflows/deploy.yml/badge.svg)](https://github.com/cl3720/PRICE-React-D3-Tree/actions/workflows/deploy.yml)
+
 A React-based application for creating and visualizing decision trees with D3.js. This tool allows users to build complex decision trees with different types of nodes, each having specific properties and connection rules.
 
-## Development
+## Demo
 
-### Local Development
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Start the development server:
-   ```bash
-   npm start
-   ```
-
-### Docker Development
-1. Build the Docker image:
-   ```bash
-   docker build -t decision-tree-visualization .
-   ```
-2. Run the container:
-   ```bash
-   docker run -p 3000:80 decision-tree-visualization
-   ```
-3. Access the application at `http://localhost:3000`
-
-## Deployment
-
-### Prerequisites
-- GitHub account
-- DigitalOcean account
-- A DigitalOcean Droplet with Docker installed
-
-### Setup Secrets
-Add the following secrets to your GitHub repository:
-- `DROPLET_HOST`: Your DigitalOcean Droplet hostname or IP address
-- `DROPLET_USERNAME`: SSH username for accessing the Droplet
-- `DROPLET_SSH_KEY`: SSH private key for accessing the Droplet
-- `DROPLET_PATH`: Path on the Droplet where the application will be deployed
-
-### Automated Deployment
-The application is automatically deployed to your DigitalOcean Droplet when changes are pushed to the main branch. The deployment process:
-1. Builds a Docker image
-2. Pushes the image to GitHub Container Registry (GHCR)
-3. Pulls the latest image on the Droplet
-4. Stops and removes the old container
-5. Runs the new container
-
-### Manual Deployment
-1. Build and push the Docker image:
-   ```bash
-   # Build the image
-   docker build -t ghcr.io/your-username/decision-tree-visualization .
-   
-   # Login to GitHub Container Registry
-   echo $GITHUB_TOKEN | docker login ghcr.io -u your-username --password-stdin
-   
-   # Push the image
-   docker push ghcr.io/your-username/decision-tree-visualization
-   ```
-
-2. SSH into your Droplet:
-   ```bash
-   ssh $DROPLET_USERNAME@$DROPLET_HOST
-   ```
-
-3. Pull and run the container:
-   ```bash
-   # Navigate to deployment path
-   cd $DROPLET_PATH
-   
-   # Login to GitHub Container Registry
-   echo $GITHUB_TOKEN | docker login ghcr.io -u your-username --password-stdin
-   
-   # Pull and run the container
-   docker pull ghcr.io/your-username/decision-tree-visualization
-   docker run -d \
-     -p 80:80 \
-     --name decision-tree-visualization \
-     --restart unless-stopped \
-     ghcr.io/your-username/decision-tree-visualization
-   ```
-
+You can access the live demo of the application at:
+```
+http://165.22.13.117:4833
+```
 ## Node Types and Properties
 
 ### Node Types
@@ -142,18 +71,6 @@ The application is automatically deployed to your DigitalOcean Droplet when chan
 - Node type indicators (S, D, A, O, E)
 - Node details display on selection
 - Automatic tree layout and scaling
-
-## Getting Started
-
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Start the development server:
-   ```bash
-   npm start
-   ```
 
 ## Usage
 

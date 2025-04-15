@@ -3,8 +3,9 @@
     "name": "Start",
     "nodeType": "start",
     "probability": 1,
-    "cost": 10,
+    "cost": 0,
     "expected_cost": null,
+    "time": 0,
     "children": [
         {
             "id": "41866edd-3b35-48fd-aba4-05199b26ea48",
@@ -13,6 +14,7 @@
             "probability": 1,
             "cost": 0,
             "expected_cost": null,
+            "time": 1,
             "children": [
                 {
                     "id": "ae6457d4-2644-4453-91f8-b1087e6d8f4a",
@@ -21,6 +23,7 @@
                     "probability": 0.8,
                     "cost": 500,
                     "expected_cost": null,
+                    "time": 3,
                     "children": []
                 }
             ]

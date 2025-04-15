@@ -22,6 +22,7 @@ const TreeVisualization = () => {
   const [showDeleteNodeDialog, setShowDeleteNodeDialog] = useState(false);
   const [showProbabilityError, setShowProbabilityError] = useState(false);
   const [showCostError, setShowCostError] = useState(false);
+  const [showTimeError, setShowTimeError] = useState(false);
   const [showUpdateExpectedCostAlert, setShowUpdateExpectedCostAlert] = useState(false);
   const treeContainerRef = useRef(null);
 
@@ -53,6 +54,7 @@ const TreeVisualization = () => {
     setNewNode({});
     setShowProbabilityError(false);
     setShowCostError(false);
+    setShowTimeError(false);
     setShowEditNodeDialog(false);
     setShowAddNodeDialog(false);
     setShowDeleteNodeDialog(false);
@@ -62,10 +64,12 @@ const TreeVisualization = () => {
   const editNode = () => {
     setShowProbabilityError(false);
     setShowCostError(false);
+    setShowTimeError(false);
     let returnDueToError = false;
-    selectedNode.probability = parseFloat(selectedNode.probability);
-    selectedNode.cost = parseFloat(selectedNode.cost);
     // Validate the probability value
+    selectedNode.probability = parseFloat(selectedNode.probability);
+    // Ensure cost is a number
+    selectedNode.cost = parseFloat(selectedNode.cost);
     if (selectedNode.probability < 0 || selectedNode.probability > 1) {
       setShowProbabilityError(true);
       returnDueToError = true;
@@ -73,6 +77,11 @@ const TreeVisualization = () => {
     // Validate the cost value
     if (selectedNode.cost < 0) {
       setShowCostError(true);
+      returnDueToError = true;
+    }
+    // Validate the time value
+    if (selectedNode.time < 0) {
+      setShowTimeError(true);
       returnDueToError = true;
     }
     if (returnDueToError) {
@@ -84,11 +93,21 @@ const TreeVisualization = () => {
     const { ...nodeDetails } = selectedNode;
     console.log('Edit nodeDetails:', nodeDetails);
     console.log('selectedNode:', selectedNode);
+    // Force cost to 0 and probability to 1 for start nodes
+    if (nodeDetails.nodeType === nodeTypes.START) {
+      nodeDetails.cost = 0;
+      nodeDetails.probability = 1;
+    }
+    // Force probability to 1 for decision nodes
+    if (nodeDetails.nodeType === nodeTypes.DECISION) {
+      nodeDetails.probability = 1;
+    }
     const editNodeRecursive = (node) => {
       if (node.id === selectedNode.id) {
         node.name = nodeDetails.name;
-        node.cost = nodeDetails.cost;
+        node.cost = parseFloat(nodeDetails.cost);
         node.probability = nodeDetails.probability;
+        node.time = nodeDetails.time;
       } else if (node.children) {
         node.children.forEach(editNodeRecursive);
       }
@@ -102,10 +121,13 @@ const TreeVisualization = () => {
   const addNode = () => {
     setShowProbabilityError(false);
     setShowCostError(false);
+    setShowTimeError(false);
     let returnDueToError = false;
     // Validate the probability value
     console.log('newNode:', newNode);
     newNode.probability = parseFloat(newNode.probability);
+    // Ensure cost is a number
+    newNode.cost = parseFloat(newNode.cost);
     if (newNode.probability < 0 || newNode.probability > 1) {
       setShowProbabilityError(true);
       returnDueToError = true;
@@ -113,6 +135,11 @@ const TreeVisualization = () => {
     // Validate the cost value
     if (newNode.cost < 0) {
       setShowCostError(true);
+      returnDueToError = true;
+    }
+    // Validate the time value
+    if (newNode.time < 0) {
+      setShowTimeError(true);
       returnDueToError = true;
     }
     if (returnDueToError) {
@@ -125,8 +152,30 @@ const TreeVisualization = () => {
       nodeDetails.name = 'Exit';
     }
     nodeDetails.name = nodeDetails.name || 'New Node';
-    nodeDetails.cost = nodeDetails.cost || 0;
-    nodeDetails.probability = nodeDetails.probability || 0;
+    // Force cost to 0 and probability to 1 for start nodes
+    if (nodeDetails.nodeType === nodeTypes.START) {
+      nodeDetails.cost = 0;
+      nodeDetails.probability = 1;
+    } else {
+      nodeDetails.cost = parseFloat(nodeDetails.cost) || 0;
+      // Force probability to 1 for decision nodes
+      nodeDetails.probability = nodeDetails.nodeType === nodeTypes.DECISION ? 1 : (nodeDetails.probability || 0);
+    }
+    // Set default time based on node type
+    nodeDetails.time = nodeDetails.time || (() => {
+      switch (nodeDetails.nodeType) {
+        case nodeTypes.START:
+          return 0;
+        case nodeTypes.DECISION:
+          return 1;
+        case nodeTypes.ACTION:
+          return 2;
+        case nodeTypes.EXIT:
+          return 0;
+        default:
+          return 0;
+      }
+    })();
     nodeDetails.id = uuidv4();
     nodeDetails.children = []
     console.log('Add nodeDetails:', nodeDetails);
@@ -253,56 +302,37 @@ const TreeVisualization = () => {
   }
 
   const HandleAllowAddNodeType = (nodeDatum) => {
-    let showAction = false
-    let showOutcome = false
-    let showDecision = false
-    let showExit = false
-    // if node type is decision and if there is already a child attached, only same type of node are allowed, otherwise allow action and exit
-    if (nodeDatum.nodeType === nodeTypes.DECISION){
-      if (nodeDatum.children.length > 0) {
-        if (nodeDatum.children[0].nodeType === nodeTypes.DECISION) {
-          showDecision = true;
-        } else if (nodeDatum.children[0].nodeType === nodeTypes.ACTION) {
-          showAction = true;
-          showExit = true;
-        } else if (nodeDatum.children[0].nodeType === nodeTypes.OUTCOME) {
-          showOutcome = true;
-        } else if (nodeDatum.children[0].nodeType === nodeTypes.EXIT) {
-          showAction = true;
-        }
-      } else {
-        showAction = true;
-        showExit = true;
-      }
+    let showAction = false;
+    let showOutcome = false;
+    let showDecision = false;
+    let showExit = false;
+
+    // If parent is a result node, allow action, decision, and exit
+    if (nodeDatum.nodeType === nodeTypes.OUTCOME) {
+      showAction = true;
+      showDecision = true;
+      showExit = true;
     }
-    // if node type is action, and if there is already a child outcome attached, only outcome is allowed, otherwise allow decision, exit and action
-    if (nodeDatum.nodeType === nodeTypes.ACTION) {
-      if (nodeDatum.children.length > 0) {
-        if (nodeDatum.children[0].nodeType === nodeTypes.OUTCOME) {
-          showOutcome = true;
-        }
-      } else {
-        showDecision = true;
-        showExit = true;
-        showAction = true;
-        showOutcome = true;
-      }
+    // If parent is a start node, only allow decision
+    else if (nodeDatum.nodeType === nodeTypes.START) {
+      showDecision = true;
+    }
+    // If parent is a decision node, allow action and exit
+    else if (nodeDatum.nodeType === nodeTypes.DECISION) {
+      showAction = true;
+      showExit = true;
+    }
+    // If parent is an action node, allow result and decision
+    else if (nodeDatum.nodeType === nodeTypes.ACTION) {
+      showOutcome = true;
+      showDecision = true;
+    }
+    // If parent is an exit node, don't allow any children
+    else if (nodeDatum.nodeType === nodeTypes.EXIT) {
+      // No children allowed for exit nodes
     }
 
-    // if node type is outcome or start, and if there is already a child attached, not allowed for adding new nodes, otherwise, allow decision, action and exit.
-    if (nodeDatum.nodeType === nodeTypes.OUTCOME || nodeDatum.nodeType === nodeTypes.START) {
-      if (nodeDatum.children.length === 0) {
-        showDecision = true;
-        showAction = true;
-        showExit = true;
-      }
-    }
-
-    // if node type is exit, not allow to adding new nodes
-
-    // if none are true, allowAdd is false, otherwise, allowAdd is true
-
-    setAllowAddNodeType([showDecision, showAction, showOutcome, showExit])
+    setAllowAddNodeType([showDecision, showAction, showOutcome, showExit]);
   };
 
 
@@ -328,37 +358,81 @@ const TreeVisualization = () => {
           </RadioGroup>
           </>
           }
-          {(newNode.nodeType === nodeTypes.EXIT) && (
-            <Alert severity="info">
-              Add an exit node
-            </Alert>
-          )}
-          {(newNode.nodeType === nodeTypes.DECISION) && (
-            <label>
-              Decision Point:
-              <input type="text" name="name" onChange={(handleAddNodeChange)} />
-            </label>
-          )}
-          {((newNode.nodeType === nodeTypes.ACTION) || (newNode.nodeType === nodeTypes.OUTCOME)) && (
+          {newNode.nodeType && (
             <>
               <label>
-                {newNode.nodeType === nodeTypes.ACTION ? "Action Name" : "Outcome Name"}
-                <input type="text" name="name" onChange={handleAddNodeChange} defaultValue={newNode.name} />
+                Node Name:
+                <input 
+                  type="text" 
+                  name="name" 
+                  onChange={handleAddNodeChange} 
+                  defaultValue={newNode.nodeType === nodeTypes.EXIT ? "Exit" : ""} 
+                />
               </label>
 
-              {newNode.nodeType === nodeTypes.ACTION && (
-                <>
-                  <label>Cost:<input type="number" name="cost" onChange={handleAddNodeChange} defaultValue={newNode.cost} min={0} /></label>
-                  {showCostError && <Alert severity="error" > The value of cost must be greater than or equal to 0.</Alert>}
-                </>
-              )}
+              <label>
+                Cost:
+                <input 
+                  type="number" 
+                  name="cost" 
+                  onChange={handleAddNodeChange} 
+                  defaultValue={(() => {
+                    if (newNode.nodeType === nodeTypes.OUTCOME) return 0;
+                    if (newNode.nodeType === nodeTypes.EXIT) return 0;
+                    return 0;
+                  })()} 
+                  min={0} 
+                  disabled={newNode.nodeType === nodeTypes.OUTCOME || newNode.nodeType === nodeTypes.EXIT}
+                />
+              </label>
+              {showCostError && <Alert severity="error">The value of cost must be greater than or equal to 0.</Alert>}
 
-              <label>Probability:<input type="number" name="probability" onChange={handleAddNodeChange} defaultValue={newNode.probability} min={0} max={1} step={0.1} /></label>
-              {showProbabilityError && <Alert severity="error" > The value of probability must be between 0 and 1.</Alert>}
+              <label>
+                Time (weeks):
+                <input 
+                  type="number" 
+                  name="time" 
+                  onChange={handleAddNodeChange} 
+                  defaultValue={(() => {
+                    switch (newNode.nodeType) {
+                      case nodeTypes.START:
+                        return 0;
+                      case nodeTypes.DECISION:
+                        return 1;
+                      case nodeTypes.ACTION:
+                        return 2;
+                      case nodeTypes.EXIT:
+                        return 0;
+                      default:
+                        return 0;
+                    }
+                  })()} 
+                  min={0} 
+                  disabled={newNode.nodeType === nodeTypes.EXIT}
+                />
+              </label>
+              {showTimeError && <Alert severity="error">The value of time must be greater than or equal to 0.</Alert>}
+
+              <label>
+                Probability:
+                <input 
+                  type="number" 
+                  name="probability" 
+                  onChange={handleAddNodeChange} 
+                  defaultValue={(() => {
+                    if (newNode.nodeType === nodeTypes.DECISION) return 1;
+                    if (newNode.nodeType === nodeTypes.EXIT) return 1;
+                    return 0;
+                  })()} 
+                  min={0} 
+                  max={1} 
+                  step={0.1} 
+                  disabled={newNode.nodeType === nodeTypes.DECISION || newNode.nodeType === nodeTypes.EXIT}
+                />
+              </label>
+              {showProbabilityError && <Alert severity="error">The value of probability must be between 0 and 1.</Alert>}
             </>
           )}
-
-
         </DialogContent>
         <DialogActions>
           <Button onClick={() => { setShowAddNodeDialog(false) }} color="error" variant="contained">Cancel</Button>
@@ -391,12 +465,43 @@ const TreeVisualization = () => {
           {selectedNode && <>
             <label> Node Type: <input type="text" name="nodeType" value={selectedNode.nodeType} disabled /></label>
             <label> Name: <input type="text" name="name" value={selectedNode.name} onChange={handleSelectedNodeChange} /></label>
-            {/* Default cost is 0 */}
-            <label>Cost:<input type="number" name="cost" value={selectedNode.cost} onChange={handleSelectedNodeChange} defaultValue={0} min={0} /></label>
-            {showCostError && <Alert severity="error" > The value of cost must be greater than or equal to 0.</Alert>}
-            {/* Default probability is 1 */}
-            <label>Probability:<input type="number" name="probability" value={selectedNode.probability} onChange={handleSelectedNodeChange} defaultValue={1} min={0} max={1} step={0.1} /></label>
-            {showProbabilityError && <Alert severity="error" > The value of probability must be between 0 and 1.</Alert>}
+            <label>
+              Cost:
+              <input 
+                type="number" 
+                name="cost" 
+                value={selectedNode.cost} 
+                onChange={handleSelectedNodeChange} 
+                min={0} 
+                disabled={selectedNode.nodeType === nodeTypes.OUTCOME}
+              />
+            </label>
+            {showCostError && <Alert severity="error">The value of cost must be greater than or equal to 0.</Alert>}
+            <label>
+              Time (weeks):
+              <input 
+                type="number" 
+                name="time" 
+                value={selectedNode.time} 
+                onChange={handleSelectedNodeChange} 
+                min={0} 
+              />
+            </label>
+            {showTimeError && <Alert severity="error">The value of time must be greater than or equal to 0.</Alert>}
+            <label>
+              Probability:
+              <input 
+                type="number" 
+                name="probability" 
+                value={selectedNode.probability} 
+                onChange={handleSelectedNodeChange} 
+                min={0} 
+                max={1} 
+                step={0.1} 
+                disabled={selectedNode.nodeType === nodeTypes.DECISION}
+              />
+            </label>
+            {showProbabilityError && <Alert severity="error">The value of probability must be between 0 and 1.</Alert>}
           </>
           }
         </DialogContent>

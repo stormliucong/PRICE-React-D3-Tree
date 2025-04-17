@@ -70,6 +70,88 @@ const TreeVisualization = () => {
     }
   };
 
+  const calculateExpectedCost = (node) => {
+    // node.children is an array of children, if not empty, calculate the expected cost
+    if (node.children.length > 0) {
+      let totalProbability = 0;
+      let totalExpectedCost = 0;
+
+      // Calculate the total probability
+      node.children.forEach((child) => {
+        totalProbability += child.probability;
+      });
+
+      // Normalize the probability
+      if (totalProbability !== 1) {
+        node.children.forEach((child) => {
+          if (totalProbability === 0) {
+            child.probability = 0;
+          }
+          else{
+            child.probability = child.probability / totalProbability;
+          }
+        });
+        setShowUpdateExpectedCostAlert(true);
+      }
+
+      // Calculate the expected cost
+      node.children.forEach((child) => {
+        calculateExpectedCost(child);
+        totalExpectedCost += child.expected_cost * child.probability;
+      });
+
+      node.expected_cost = totalExpectedCost + node.cost;
+    } else {
+      node.expected_cost = node.cost;
+    }
+  };
+
+  const normalizeProbabilities = (parentNode, modifiedNode = null, newProbability = null) => {
+    if (!parentNode.children || parentNode.children.length === 0) return;
+
+    // If there's only one child, force its probability to 1
+    if (parentNode.children.length === 1) {
+      parentNode.children[0].probability = 1;
+      return;
+    }
+
+    // If we're modifying a specific node's probability
+    if (modifiedNode && newProbability !== null) {
+      const otherNodes = parentNode.children.filter(child => child.id !== modifiedNode.id);
+      const sumOtherProbabilities = otherNodes.reduce((sum, node) => sum + node.probability, 0);
+      
+      if (sumOtherProbabilities === 0) {
+        // If other nodes have 0 probability, distribute remaining probability equally
+        const remainingProbability = 1 - newProbability;
+        const equalShare = remainingProbability / otherNodes.length;
+        otherNodes.forEach(node => {
+          node.probability = equalShare;
+        });
+      } else {
+        // Scale other probabilities proportionally
+        const scaleFactor = (1 - newProbability) / sumOtherProbabilities;
+        otherNodes.forEach(node => {
+          node.probability = node.probability * scaleFactor;
+        });
+      }
+    } else {
+      // If no specific node is being modified, normalize all probabilities
+      const totalProbability = parentNode.children.reduce((sum, node) => sum + node.probability, 0);
+      if (totalProbability === 0) {
+        // If all probabilities are 0, distribute equally
+        const equalShare = 1 / parentNode.children.length;
+        parentNode.children.forEach(node => {
+          node.probability = equalShare;
+        });
+      } else {
+        // Normalize all probabilities
+        parentNode.children.forEach(node => {
+          node.probability = node.probability / totalProbability;
+        });
+      }
+    }
+  };
+
   const editNode = () => {
     setShowProbabilityError(false);
     setShowCostError(false);
@@ -125,8 +207,27 @@ const TreeVisualization = () => {
       }
     };
     editNodeRecursive(updatedTree);
+
+    // Find the parent node and normalize probabilities
+    const findParentAndNormalize = (currentNode) => {
+      if (currentNode.children) {
+        const childIndex = currentNode.children.findIndex(child => child.id === selectedNode.id);
+        if (childIndex !== -1) {
+          normalizeProbabilities(currentNode, selectedNode, selectedNode.probability);
+          return true;
+        }
+        for (const child of currentNode.children) {
+          if (findParentAndNormalize(child)) return true;
+        }
+      }
+      return false;
+    };
+    findParentAndNormalize(updatedTree);
+
     // Recalculate cumulative time after editing
     calculateCumulativeTime(updatedTree);
+    // Recalculate expected cost after editing
+    calculateExpectedCost(updatedTree);
     setTreeData(updatedTree);
     setSelectedNode(null);
     setShowEditNodeDialog(false)
@@ -202,6 +303,8 @@ const TreeVisualization = () => {
     const addNodeRecursive = (node) => {
       if (node.id === selectedNode.id) {
         node.children.push(nodeDetails);
+        // Normalize probabilities after adding the new node
+        normalizeProbabilities(node, nodeDetails, nodeDetails.probability);
       } else if (node.children) {
         node.children.forEach(addNodeRecursive);
       }
@@ -210,6 +313,8 @@ const TreeVisualization = () => {
     addNodeRecursive(updatedTree);
     // Recalculate cumulative time after adding new node
     calculateCumulativeTime(updatedTree);
+    // Recalculate expected cost after adding new node
+    calculateExpectedCost(updatedTree);
     setTreeData(updatedTree);
     setShowAddNodeDialog(false);
     setSelectedNode(null);
@@ -231,6 +336,10 @@ const TreeVisualization = () => {
     };
 
     deleteNodeRecursive(updatedTree);
+    // Recalculate cumulative time after deleting node
+    calculateCumulativeTime(updatedTree);
+    // Recalculate expected cost after deleting node
+    calculateExpectedCost(updatedTree);
     setTreeData(updatedTree);
     setSelectedNode(null);
   };
@@ -268,56 +377,8 @@ const TreeVisualization = () => {
   }
 
   const allowAdd = (nodeDatum) => {
-    
     // if all false return false, o/w return true
     return allowAddNodeType.some((element) => element === true);
-  }
-
-  const updateExpectedCost = () => {
-    const updatedTree = { ...treeData };
-    // calculate expected cost bottom up. 
-    // The expected cost of a node is the weighted sum of the expected cost of its children plus the cost of the node.
-    // The child probability should be normalized to sum to 1.
-    const calculateExpectedCost = (node) => {
-      // node.children is an array of children, if not empty, calculate the expected cost
-      if (node.children.length > 0) {
-        let totalProbability = 0;
-        let totalExpectedCost = 0;
-
-        // Calculate the total probability
-        node.children.forEach((child) => {
-          totalProbability += child.probability;
-        });
-
-        // Normalize the probability
-        if (totalProbability !== 1) {
-          node.children.forEach((child) => {
-            if (totalProbability === 0) {
-              child.probability = 0;
-            }
-            else{
-              child.probability = child.probability / totalProbability;
-            }
-          });
-          setShowUpdateExpectedCostAlert(true);
-        }
-
-        // Calculate the expected cost
-        node.children.forEach((child) => {
-          calculateExpectedCost(child);
-          totalExpectedCost += child.expected_cost * child.probability;
-        });
-
-        node.expected_cost = totalExpectedCost + node.cost;
-      } else {
-        node.expected_cost = node.cost;
-      }
-    };
-
-    // start from the root node
-    calculateExpectedCost(updatedTree);
-    setTreeData(updatedTree);
-    setSelectedNode(null);
   }
 
   const HandleAllowAddNodeType = (nodeDatum) => {
@@ -440,12 +501,14 @@ const TreeVisualization = () => {
                   onChange={handleAddNodeChange} 
                   defaultValue={(() => {
                     if (newNode.nodeType === nodeTypes.DECISION) return 1;
+                    // If parent has no children, set probability to 1
+                    if (selectedNode && (!selectedNode.children || selectedNode.children.length === 0)) return 1;
                     return 0;
                   })()} 
                   min={0} 
                   max={1} 
                   step={0.1} 
-                  disabled={newNode.nodeType === nodeTypes.DECISION}
+                  disabled={newNode.nodeType === nodeTypes.DECISION || (selectedNode && selectedNode.children && selectedNode.children.length === 0)}
                 />
               </label>
               {showProbabilityError && <Alert severity="error">The value of probability must be between 0 and 1.</Alert>}
@@ -619,7 +682,6 @@ const TreeVisualization = () => {
         {treeData.expected_cost !== null && <Alert severity="info">The expected cost of the tree is {parseInt(treeData.expected_cost)}</Alert>}
         {/* warning banner to indicate current expected cost is not available if it is null */}
         {treeData.expected_cost === null && <Alert severity="warning">The expected cost is not available. </Alert>}
-        <Alert> Please click update expected cost button for START node.</Alert>
 
         {selectedNode && (
           <>
@@ -632,7 +694,6 @@ const TreeVisualization = () => {
               {allowAdd(selectedNode) && <Button onClick={() => { setShowCostError(false); setShowProbabilityError(false); setShowAddNodeDialog(true) }} color='secondary' variant="contained">Add Node</Button>}
               {allowDelete(selectedNode) && <Button onClick={() => { setShowCostError(false); setShowProbabilityError(false); setShowDeleteNodeDialog(true) }} color="error" variant="contained">Delete Node</Button>}
               {allowEdit(selectedNode) && <Button onClick={() => { setShowCostError(false); setShowProbabilityError(false); setShowEditNodeDialog(true) }} color="success" variant="contained">Edit Node</Button>}
-              <Button onClick={updateExpectedCost} color="primary" variant="contained">Update Expected Cost</Button>
             
           </>
          

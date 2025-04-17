@@ -65,7 +65,9 @@ export const initialTreeData = {
   nodeType: nodeTypes.START,
   probability: 1,
   cost: 0,
-  expected_cost: null,
+  time: 0,
+  cumulative_time: 0,
+  expected_cost: 0,
   children: [
   ],
 };

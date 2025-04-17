@@ -18,6 +18,12 @@ const SelectedNodeDetails = ({ selectedNode }) => {
             <Typography variant="body1">
               <strong>Probability:</strong> {selectedNode.probability}
             </Typography>
+            <Typography variant="body1">
+              <strong>Time (weeks):</strong> {selectedNode.time}
+            </Typography>
+            <Typography variant="body1">
+              <strong>Cumulative Time (weeks):</strong> {selectedNode.cumulative_time}
+            </Typography>
             {selectedNode.expected_cost !== null && (
               <Typography variant="body1">
                 <strong>Expected Cost:</strong> {parseInt(selectedNode.expected_cost)}

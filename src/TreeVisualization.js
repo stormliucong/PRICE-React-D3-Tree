@@ -61,6 +61,15 @@ const TreeVisualization = () => {
     setShowUpdateExpectedCostAlert(false);
   }
 
+  const calculateCumulativeTime = (node, parentTime = 0) => {
+    // Ensure time is a number
+    const nodeTime = parseFloat(node.time) || 0;
+    node.cumulative_time = parentTime + nodeTime;
+    if (node.children) {
+      node.children.forEach(child => calculateCumulativeTime(child, node.cumulative_time));
+    }
+  };
+
   const editNode = () => {
     setShowProbabilityError(false);
     setShowCostError(false);
@@ -70,6 +79,8 @@ const TreeVisualization = () => {
     selectedNode.probability = parseFloat(selectedNode.probability);
     // Ensure cost is a number
     selectedNode.cost = parseFloat(selectedNode.cost);
+    // Ensure time is a number
+    selectedNode.time = parseFloat(selectedNode.time) || 0;
     if (selectedNode.probability < 0 || selectedNode.probability > 1) {
       setShowProbabilityError(true);
       returnDueToError = true;
@@ -97,6 +108,7 @@ const TreeVisualization = () => {
     if (nodeDetails.nodeType === nodeTypes.START) {
       nodeDetails.cost = 0;
       nodeDetails.probability = 1;
+      nodeDetails.time = 0;  // Force time to 0 for start nodes
     }
     // Force probability to 1 for decision nodes
     if (nodeDetails.nodeType === nodeTypes.DECISION) {
@@ -113,6 +125,8 @@ const TreeVisualization = () => {
       }
     };
     editNodeRecursive(updatedTree);
+    // Recalculate cumulative time after editing
+    calculateCumulativeTime(updatedTree);
     setTreeData(updatedTree);
     setSelectedNode(null);
     setShowEditNodeDialog(false)
@@ -128,6 +142,8 @@ const TreeVisualization = () => {
     newNode.probability = parseFloat(newNode.probability);
     // Ensure cost is a number
     newNode.cost = parseFloat(newNode.cost);
+    // Ensure time is a number
+    newNode.time = parseFloat(newNode.time) || 0;
     if (newNode.probability < 0 || newNode.probability > 1) {
       setShowProbabilityError(true);
       returnDueToError = true;
@@ -156,6 +172,7 @@ const TreeVisualization = () => {
     if (nodeDetails.nodeType === nodeTypes.START) {
       nodeDetails.cost = 0;
       nodeDetails.probability = 1;
+      nodeDetails.time = 0;  // Force time to 0 for start nodes
     } else {
       nodeDetails.cost = parseFloat(nodeDetails.cost) || 0;
       // Force probability to 1 for decision nodes
@@ -191,6 +208,8 @@ const TreeVisualization = () => {
     };
 
     addNodeRecursive(updatedTree);
+    // Recalculate cumulative time after adding new node
+    calculateCumulativeTime(updatedTree);
     setTreeData(updatedTree);
     setShowAddNodeDialog(false);
     setSelectedNode(null);
@@ -408,7 +427,7 @@ const TreeVisualization = () => {
                     }
                   })()} 
                   min={0} 
-                  disabled={newNode.nodeType === nodeTypes.EXIT}
+                  disabled={newNode.nodeType === nodeTypes.START || newNode.nodeType === nodeTypes.EXIT}
                 />
               </label>
               {showTimeError && <Alert severity="error">The value of time must be greater than or equal to 0.</Alert>}
@@ -484,6 +503,7 @@ const TreeVisualization = () => {
                 value={selectedNode.time} 
                 onChange={handleSelectedNodeChange} 
                 min={0} 
+                disabled={selectedNode.nodeType === nodeTypes.START || selectedNode.nodeType === nodeTypes.EXIT}
               />
             </label>
             {showTimeError && <Alert severity="error">The value of time must be greater than or equal to 0.</Alert>}

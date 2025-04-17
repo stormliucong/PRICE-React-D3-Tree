@@ -421,13 +421,12 @@ const TreeVisualization = () => {
                   onChange={handleAddNodeChange} 
                   defaultValue={(() => {
                     if (newNode.nodeType === nodeTypes.DECISION) return 1;
-                    if (newNode.nodeType === nodeTypes.EXIT) return 1;
                     return 0;
                   })()} 
                   min={0} 
                   max={1} 
                   step={0.1} 
-                  disabled={newNode.nodeType === nodeTypes.DECISION || newNode.nodeType === nodeTypes.EXIT}
+                  disabled={newNode.nodeType === nodeTypes.DECISION}
                 />
               </label>
               {showProbabilityError && <Alert severity="error">The value of probability must be between 0 and 1.</Alert>}

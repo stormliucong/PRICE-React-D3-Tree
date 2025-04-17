@@ -38,7 +38,6 @@ http://165.22.13.117:4833
 5. **Exit Node**
    - Cost: Always 0
    - Time: Always 0 weeks
-   - Probability: Always 1
    - Cannot have any children
 
 ### Node Connection Rules

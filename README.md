@@ -3,6 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![React](https://img.shields.io/badge/React-18.2.0-blue.svg)](https://reactjs.org/)
 
+
 A React-based application for creating and visualizing decision trees with D3.js. This tool allows users to build complex decision trees with different types of nodes, each having specific properties and connection rules.
 
 ## Demo
@@ -11,6 +12,7 @@ You can access the live demo of the application at:
 ```
 http://165.22.13.117:4833
 ```
+
 ## Node Types and Properties
 
 ### Node Types
@@ -38,6 +40,7 @@ http://165.22.13.117:4833
 5. **Exit Node**
    - Cost: Always 0
    - Time: Always 0 weeks
+   - Probability: Flexible (0-1)
    - Cannot have any children
 
 ### Node Connection Rules
@@ -47,21 +50,53 @@ http://165.22.13.117:4833
 - **Result Node** → Action, Decision, Exit
 - **Exit Node** → No children allowed
 
+## Data Structure
+
+Each node in the tree has the following properties:
+- `id`: Unique identifier
+- `name`: Node name
+- `nodeType`: Type of node (start, decision, action, outcome, exit)
+- `probability`: Probability value (0-1)
+  - Automatically normalized when adding/editing nodes
+  - For single child nodes, probability is always 1
+  - For multiple children, probabilities sum to 1
+- `cost`: Cost value (≥ 0)
+- `time`: Time in weeks (≥ 0)
+- `cumulative_time`: Total time from root to current node (sum of all parent nodes' time)
+- `expected_cost`: Calculated expected cost
+  - Automatically updated when tree is modified
+  - For leaf nodes, equals the node's cost
+  - For non-leaf nodes, equals the weighted sum of children's expected costs plus node's cost
+- `children`: Array of child nodes
+
 ## Features
 
-### Node Management
-- Add new nodes with specific types based on parent node rules
-- Edit node properties (name, cost, time, probability)
-- Delete nodes (except Start node)
-- Automatic validation of node properties
-- Default values based on node type
+1. **Automatic Probability Normalization**
+   - When adding the first child node, probability is set to 1
+   - When adding subsequent nodes, probabilities are automatically normalized
+   - When editing a node's probability, other nodes' probabilities are adjusted proportionally
+   - Warning shown when probabilities need to be normalized
+
+2. **Time Tracking**
+   - Individual time for each node
+   - Cumulative time showing total path duration
+   - Automatic time calculation for new nodes based on type
+
+3. **Cost Analysis**
+   - Automatic expected cost calculation
+   - Cost updates propagate through the tree
+   - Real-time cost display for selected nodes
+
+4. **Node Management**
+   - Add, edit, and delete nodes
+   - Type-specific validation rules
+   - Automatic property enforcement (e.g., Start node time = 0)
 
 ### Tree Operations
 - Load predefined demo trees
 - Upload custom tree JSON files
 - Download current tree as JSON
 - Reset tree to initial state
-- Calculate expected cost for the entire tree
 
 ### Visualization
 - Interactive tree visualization using D3.js
@@ -88,9 +123,6 @@ http://165.22.13.117:4833
    - Click "Delete Node" to remove it
    - Note: Start node cannot be deleted
 
-4. **Calculating Expected Cost**
-   - Click on the Start node
-   - Click "Update Expected Cost" to calculate the expected cost for the entire tree
 
 ## File Management
 
@@ -108,17 +140,6 @@ http://165.22.13.117:4833
 - UUID
 - Docker
 - Nginx
-
-### Data Structure
-Each node in the tree has the following properties:
-- `id`: Unique identifier
-- `name`: Node name
-- `nodeType`: Type of node (start, decision, action, outcome, exit)
-- `probability`: Probability value (0-1)
-- `cost`: Cost value (≥ 0)
-- `time`: Time in weeks (≥ 0)
-- `expected_cost`: Calculated expected cost
-- `children`: Array of child nodes
 
 ## Contributing
 

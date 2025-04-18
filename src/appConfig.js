@@ -3,9 +3,13 @@ import { v4 as uuidv4 } from 'uuid';
 
 export const drawerWidth = 500;
 
-export const renderCustomNodeElement = ({ nodeDatum, toggleNode }) => {
+export const renderCustomNodeElement = ({ nodeDatum, toggleNode, selectedNode }) => {
   let color;
   let word;
+  let text_color = 'black';
+  let stroke_width = 2;
+  let radius = selectedNode && selectedNode.id === nodeDatum.id ? 25 : 20; // Larger radius for selected node
+
   switch (nodeDatum.nodeType) {
     case nodeTypes.START:
       word = 'S'
@@ -28,15 +32,19 @@ export const renderCustomNodeElement = ({ nodeDatum, toggleNode }) => {
       color = nodeColors.EXIT;
   }
 
+  if (nodeDatum.valid_prob === false){
+    text_color = 'red';
+    stroke_width = 5;
+  }
+
   return (
     <g>
       {/* Add word into the circle */}
       <text fill="black" strokeWidth="1" x="-10">
-        {word}
       </text>
-      <circle fill={color} r="20" onClick={() => toggleNode(nodeDatum)} />
+      <circle fill={color} r={radius} stroke={text_color} strokeWidth={stroke_width} onClick={() => toggleNode(nodeDatum)} />
       
-      <text fill="black" strokeWidth="1" x="30">
+      <text fill={text_color} stroke={text_color} strokeWidth="1" x="30">
         {nodeDatum.name}
       </text>
     </g>
@@ -67,6 +75,7 @@ export const initialTreeData = {
   cost: 0,
   time: 0,
   cumulative_time: 0,
+  valid_prob: true,
   expected_cost: 0,
   children: [
   ],

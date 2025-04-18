@@ -81,76 +81,32 @@ const TreeVisualization = () => {
         totalProbability += child.probability;
       });
 
-      // Normalize the probability
-      if (totalProbability !== 1) {
+      // change valid_prob to false if total probability is not 1
+      if (Math.abs(totalProbability - 1) > 0.0001) {
         node.children.forEach((child) => {
-          if (totalProbability === 0) {
-            child.probability = 0;
-          }
-          else{
-            child.probability = child.probability / totalProbability;
-          }
+          child.valid_prob = false;
         });
         setShowUpdateExpectedCostAlert(true);
+        node.expected_cost = NaN;
       }
-
-      // Calculate the expected cost
-      node.children.forEach((child) => {
-        calculateExpectedCost(child);
-        totalExpectedCost += child.expected_cost * child.probability;
-      });
-
-      node.expected_cost = totalExpectedCost + node.cost;
+      else{
+        node.children.forEach((child) => {
+          child.valid_prob = true;
+          calculateExpectedCost(child);
+          if (child.expected_cost === NaN){
+            totalExpectedCost = NaN;
+          }
+          else{
+            totalExpectedCost += child.expected_cost * child.probability;
+          }
+        });
+        node.expected_cost = totalExpectedCost + node.cost;
+      }
     } else {
       node.expected_cost = node.cost;
     }
   };
 
-  const normalizeProbabilities = (parentNode, modifiedNode = null, newProbability = null) => {
-    if (!parentNode.children || parentNode.children.length === 0) return;
-
-    // If there's only one child, force its probability to 1
-    if (parentNode.children.length === 1) {
-      parentNode.children[0].probability = 1;
-      return;
-    }
-
-    // If we're modifying a specific node's probability
-    if (modifiedNode && newProbability !== null) {
-      const otherNodes = parentNode.children.filter(child => child.id !== modifiedNode.id);
-      const sumOtherProbabilities = otherNodes.reduce((sum, node) => sum + node.probability, 0);
-      
-      if (sumOtherProbabilities === 0) {
-        // If other nodes have 0 probability, distribute remaining probability equally
-        const remainingProbability = 1 - newProbability;
-        const equalShare = remainingProbability / otherNodes.length;
-        otherNodes.forEach(node => {
-          node.probability = equalShare;
-        });
-      } else {
-        // Scale other probabilities proportionally
-        const scaleFactor = (1 - newProbability) / sumOtherProbabilities;
-        otherNodes.forEach(node => {
-          node.probability = node.probability * scaleFactor;
-        });
-      }
-    } else {
-      // If no specific node is being modified, normalize all probabilities
-      const totalProbability = parentNode.children.reduce((sum, node) => sum + node.probability, 0);
-      if (totalProbability === 0) {
-        // If all probabilities are 0, distribute equally
-        const equalShare = 1 / parentNode.children.length;
-        parentNode.children.forEach(node => {
-          node.probability = equalShare;
-        });
-      } else {
-        // Normalize all probabilities
-        parentNode.children.forEach(node => {
-          node.probability = node.probability / totalProbability;
-        });
-      }
-    }
-  };
 
   const editNode = () => {
     setShowProbabilityError(false);
@@ -213,7 +169,6 @@ const TreeVisualization = () => {
       if (currentNode.children) {
         const childIndex = currentNode.children.findIndex(child => child.id === selectedNode.id);
         if (childIndex !== -1) {
-          normalizeProbabilities(currentNode, selectedNode, selectedNode.probability);
           return true;
         }
         for (const child of currentNode.children) {
@@ -262,9 +217,16 @@ const TreeVisualization = () => {
     if (returnDueToError) {
       return;
     }
+
     const updatedTree = { ...treeData };
-    console.log('updatedTree:', updatedTree);
-    const { ...nodeDetails } = newNode;
+    const nodeDetails = {
+      ...newNode,
+      id: uuidv4(),
+      children: [],
+      valid_prob: true,
+      probability: newNode.probability // Use the parsed probability
+    };
+
     if (newNode.nodeType === nodeTypes.EXIT) {
       nodeDetails.name = 'Exit';
     }
@@ -294,17 +256,12 @@ const TreeVisualization = () => {
           return 0;
       }
     })();
-    nodeDetails.id = uuidv4();
-    nodeDetails.children = []
-    console.log('Add nodeDetails:', nodeDetails);
-    console.log('selectedNode:', selectedNode);
 
     // insert node into the selectedNode in the tree
     const addNodeRecursive = (node) => {
       if (node.id === selectedNode.id) {
         node.children.push(nodeDetails);
         // Normalize probabilities after adding the new node
-        normalizeProbabilities(node, nodeDetails, nodeDetails.probability);
       } else if (node.children) {
         node.children.forEach(addNodeRecursive);
       }
@@ -430,7 +387,34 @@ const TreeVisualization = () => {
           </DialogContentText>
           {selectedNode && 
           <>
-          <RadioGroup row aria-label="nodeType" name="nodeType" value={newNode.nodeType} onChange={(e) => { setNewNode({ ...newNode, nodeType: e.target.value }) }}>
+          <RadioGroup row aria-label="nodeType" name="nodeType" value={newNode.nodeType} onChange={(e) => { 
+            const nodeType = e.target.value;
+            const defaultValues = {
+              nodeType: nodeType,
+              name: nodeType === nodeTypes.EXIT ? "Exit" : "",
+              cost: (nodeType === nodeTypes.OUTCOME || nodeType === nodeTypes.EXIT) ? 0 : 0,
+              time: (() => {
+                switch (nodeType) {
+                  case nodeTypes.START:
+                    return 0;
+                  case nodeTypes.DECISION:
+                    return 1;
+                  case nodeTypes.ACTION:
+                    return 2;
+                  case nodeTypes.EXIT:
+                    return 0;
+                  default:
+                    return 0;
+                }
+              })(),
+              probability: (() => {
+                if (nodeType === nodeTypes.DECISION) return 1;
+                if (selectedNode && (!selectedNode.children || selectedNode.children.length === 0)) return 1;
+                return 0;
+              })()
+            };
+            setNewNode(defaultValues);
+          }}>
             {allowAddNodeType[0] && <FormControlLabel value={nodeTypes.DECISION} control={<Radio />} label="Decision" />}
             {allowAddNodeType[1] && <FormControlLabel value={nodeTypes.ACTION} control={<Radio />} label="Action" />}
             {allowAddNodeType[2] && <FormControlLabel value={nodeTypes.OUTCOME} control={<Radio />} label="Outcome" />}
@@ -445,8 +429,8 @@ const TreeVisualization = () => {
                 <input 
                   type="text" 
                   name="name" 
+                  value={newNode.name || ""} 
                   onChange={handleAddNodeChange} 
-                  defaultValue={newNode.nodeType === nodeTypes.EXIT ? "Exit" : ""} 
                 />
               </label>
 
@@ -455,12 +439,8 @@ const TreeVisualization = () => {
                 <input 
                   type="number" 
                   name="cost" 
+                  value={newNode.cost || 0} 
                   onChange={handleAddNodeChange} 
-                  defaultValue={(() => {
-                    if (newNode.nodeType === nodeTypes.OUTCOME) return 0;
-                    if (newNode.nodeType === nodeTypes.EXIT) return 0;
-                    return 0;
-                  })()} 
                   min={0} 
                   disabled={newNode.nodeType === nodeTypes.OUTCOME || newNode.nodeType === nodeTypes.EXIT}
                 />
@@ -472,21 +452,8 @@ const TreeVisualization = () => {
                 <input 
                   type="number" 
                   name="time" 
+                  value={newNode.time || 0} 
                   onChange={handleAddNodeChange} 
-                  defaultValue={(() => {
-                    switch (newNode.nodeType) {
-                      case nodeTypes.START:
-                        return 0;
-                      case nodeTypes.DECISION:
-                        return 1;
-                      case nodeTypes.ACTION:
-                        return 2;
-                      case nodeTypes.EXIT:
-                        return 0;
-                      default:
-                        return 0;
-                    }
-                  })()} 
                   min={0} 
                   disabled={newNode.nodeType === nodeTypes.START || newNode.nodeType === nodeTypes.EXIT}
                 />
@@ -498,17 +465,12 @@ const TreeVisualization = () => {
                 <input 
                   type="number" 
                   name="probability" 
+                  value={newNode.probability || 0} 
                   onChange={handleAddNodeChange} 
-                  defaultValue={(() => {
-                    if (newNode.nodeType === nodeTypes.DECISION) return 1;
-                    // If parent has no children, set probability to 1
-                    if (selectedNode && (!selectedNode.children || selectedNode.children.length === 0)) return 1;
-                    return 0;
-                  })()} 
                   min={0} 
                   max={1} 
                   step={0.1} 
-                  disabled={newNode.nodeType === nodeTypes.DECISION || (selectedNode && selectedNode.children && selectedNode.children.length === 0)}
+                  disabled={newNode.nodeType === nodeTypes.DECISION}
                 />
               </label>
               {showProbabilityError && <Alert severity="error">The value of probability must be between 0 and 1.</Alert>}
@@ -709,7 +671,17 @@ const TreeVisualization = () => {
       <div className='tree-stats-container'>
         <FigureLegend />
       </div>
-        <Tree data={treeData} collapsible={false} translate={translate} onNodeClick={handleNodeClick} orientation={"vertical"} renderCustomNodeElement={(rd3tProps) => renderCustomNodeElement({ ...rd3tProps, toggleNode: handleNodeClick })} />
+        <Tree
+          data={treeData}
+          orientation="vertical"
+          translate={translate}
+          renderCustomNodeElement={(rd3tProps) => renderCustomNodeElement({ ...rd3tProps, selectedNode, toggleNode: handleNodeClick })}
+          pathFunc="step"
+          separation={{ siblings: 2, nonSiblings: 2 }}
+          zoom={0.8}
+          nodeSize={{ x: 200, y: 100 }}
+          onNodeClick={handleNodeClick}
+        />
       
       </div>
       
